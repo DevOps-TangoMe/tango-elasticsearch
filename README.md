@@ -25,3 +25,8 @@ Where:
 * HH is the 2 digit hour
 
 
+precreate_indices/precreate_indices.py
+--------------------------------------
+
+Python script to precreate logstash indices in advance.
+So when going into a new hourly index, ElasticSearch requests do not fail while waiting for the index to be created and shards allocated
