@@ -40,6 +40,7 @@ LOGGER.addHandler(ch)
 ################################################# Constants #######################################
 INDICES_KEY = 'indices'
 INDEX_SEPARATOR = '-'
+DEFAULT_INDEX_NAME = 'logstash'
 
 MAX_AGE_IN_DAYS = 8
 
@@ -52,11 +53,13 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("--elasticsearch", help="Base URL to contact ElasticSearch", type=str, required=True)
   parser.add_argument("--ttl", help="Maximum age in days", default=MAX_AGE_IN_DAYS, type=int)
+  parser.add_argument("--index", help="Name of the index", default=DEFAULT_INDEX_NAME, type=str, required=False)
   args = parser.parse_args()
 
 
   max_ttl_seconds = args.ttl * 24 * 3600
   elasticsearch_url = args.elasticsearch
+  index_name = args.index
 
   LOGGER.info("Contacting ElasticSearch for status: [%s]" % (elasticsearch_url))
   es_connection = esclient.ESClient(elasticsearch_url)
@@ -75,22 +78,24 @@ def main():
         split_index = index.split(INDEX_SEPARATOR)
         if split_index and len(split_index) == 3:
           (logstash, date_str, shard) = index.split(INDEX_SEPARATOR)
-          date = datetime.strptime(date_str, '%Y.%m.%d')
-          age_date = now - date
-          age_seconds = age_date.days * 24 * 3600 + age_date.seconds
 
-          if age_seconds > max_ttl_seconds:
-            retry = 0
-            success = False
-            while retry < MAX_DELETE_RETRY and not success:
-              try:
-                LOGGER.info("Deleting index [%s] since it is older than %d days" % (index, args.ttl))
-                success = es_connection.delete_index(index)
-                LOGGER.debug("Done deleting index [%s]"%(index))
-              except Exception, e:
-                LOGGER.error('Could not delete index %s: [%s]' % (index, str(e)))
-              finally:
-                retry = retry + 1
+          if logstash == index_name:
+            date = datetime.strptime(date_str, '%Y.%m.%d')
+            age_date = now - date
+            age_seconds = age_date.days * 24 * 3600 + age_date.seconds
+
+            if age_seconds > max_ttl_seconds:
+              retry = 0
+              success = False
+              while retry < MAX_DELETE_RETRY and not success:
+                try:
+                  LOGGER.info("Deleting index [%s] since it is older than %d days" % (index, args.ttl))
+                  success = es_connection.delete_index(index)
+                  LOGGER.debug("Done deleting index [%s]"%(index))
+                except Exception, e:
+                  LOGGER.error('Could not delete index %s: [%s]' % (index, str(e)))
+                finally:
+                  retry = retry + 1
         
 
       except Exception, e:
