@@ -76,8 +76,11 @@ def main():
         LOGGER.debug("Processing index [%s]"%(index))
 
         split_index = index.split(INDEX_SEPARATOR)
-        if split_index and len(split_index) == 3:
-          (logstash, date_str, shard) = index.split(INDEX_SEPARATOR)
+        if split_index and len(split_index) > 2:
+          split = index.split(INDEX_SEPARATOR)
+          logstash = INDEX_SEPARATOR.join(split[:-2])
+          date_str = split[-2]
+          shard = split[-1]
 
           if logstash == index_name:
             date = datetime.strptime(date_str, '%Y.%m.%d')
