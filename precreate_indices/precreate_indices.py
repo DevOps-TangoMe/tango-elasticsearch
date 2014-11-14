@@ -41,7 +41,7 @@ LOGGER.addHandler(ch)
 ################################################# Constants #######################################
 INDICES_KEY = 'indices'
 INDEX_SEPARATOR = '-'
-INDEX_PREFIX = 'logstash-'
+INDEX_PREFIX = 'logstash'
 
 MAX_AGE_IN_HOURS = 8
 
@@ -53,11 +53,13 @@ def main():
 
   parser = argparse.ArgumentParser()
   parser.add_argument("--elasticsearch", help="Base URL to contact ElasticSearch", type=str, required=True)
+  parser.add_argument("--indexprefix", help="ElasticSearch Index Prefix", default=INDEX_PREFIX, type=str)
   parser.add_argument("--hours-ahead", help="How many hours in advance", default=MAX_AGE_IN_HOURS, type=int)
   args = parser.parse_args()
 
 
   elasticsearch_url = args.elasticsearch
+  index_prefix = args.indexprefix
   hours_ahead = args.hours_ahead
 
   LOGGER.info("Contacting ElasticSearch for status: [%s]" % (elasticsearch_url))
@@ -67,7 +69,7 @@ def main():
   for hour in xrange(hours_ahead):
     hour_delta = timedelta(hours=hour)
     hour_date = now + hour_delta
-    index_name = INDEX_PREFIX + "%.4d.%.2d.%.2d-%.2d" % (hour_date.year, hour_date.month, hour_date.day, hour_date.hour)
+    index_name = index_prefix + INDEX_SEPARATOR + "%.4d.%.2d.%.2d-%.2d" % (hour_date.year, hour_date.month, hour_date.day, hour_date.hour)
 
     retry = 0
     success = False
